@@ -5,4 +5,5 @@ flask-pymongo
 flask-login
 flask-bcrypt
 Pillow
+gunicorn
 werkzeug
