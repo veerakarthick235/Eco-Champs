@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Available Challenges</h1>
+<p>Complete these real-world tasks to earn points and make a difference!</p>
+<div class="challenges-grid">
+    {% for challenge in challenges %}
+    <div class="card">
+        <h3>{{ challenge.title }}</h3>
+        <p>{{ challenge.description }}</p>
+        <div class="challenge-footer">
+            <span class="points-tag">{{ challenge.points }} Points</span>
+            {% set status = submission_status.get(challenge._id|string) %}
+            {% if status == 'approved' %}
+                <button class="btn btn-success" disabled>Completed</button>
+            {% elif status == 'pending' %}
+                <button class="btn btn-warning" disabled>Pending Approval</button>
+            {% elif status == 'rejected' %}
+                <a href="{{ url_for('submit_challenge', challenge_id=challenge._id) }}" class="btn btn-danger">Resubmit</a>
+            {% else %}
+                <a href="{{ url_for('submit_challenge', challenge_id=challenge._id) }}" class="btn">Submit Proof</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Submit Proof for: {{ challenge.title }}</h1>
+<p>{{ challenge.description }}</p>
+
+<div class="card">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="proof_image">Upload a Photo</label>
+            <p>Please upload a photo as proof of completing this challenge (e.g., a picture of the sapling you planted).</p>
+            <input type="file" name="proof_image" class="form-control" required accept="image/*">
+        </div>
+        <button type="submit" class="btn">Submit for Verification</button>
+    </form>
+</div>
+{% endblock %}

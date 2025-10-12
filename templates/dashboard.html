@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="dashboard-header">
+    <h1>Welcome back, {{ current_user.name }}!</h1>
+    <p>Your journey to becoming an EcoChamp continues.</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h2>Eco-Points</h2>
+        <p class="points">{{ current_user.points }}</p>
+    </div>
+    <div class="stat-card">
+        <h2>Daily Streak</h2>
+        <p class="points">🔥 {{ current_user.streak }}</p>
+    </div>
+</div>
+
+<div class="badges-section">
+    <h2>Your Badges</h2>
+    {% if current_user.badges %}
+        <div class="badges-grid">
+            {% for badge in current_user.badges %}
+                <div class="badge">{{ badge }}</div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Complete challenges and quizzes to earn badges!</p>
+    {% endif %}
+</div>
+{% endblock %}

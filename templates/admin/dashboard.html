@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Admin Dashboard</h1>
+<p>Manage submissions and platform content.</p>
+
+<a href="{{ url_for('add_challenge') }}" class="btn" style="margin-bottom: 20px;">Add New Challenge</a>
+
+<h2>Pending Submissions</h2>
+{% if submissions %}
+<div class="admin-table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Challenge</th>
+                <th>Submitted On</th>
+                <th>Proof</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub in submissions %}
+            <tr>
+                <td>{{ sub.user_info.name }}</td>
+                <td>{{ sub.challenge_info.title }}</td>
+                <td>{{ sub.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td><a href="{{ url_for('static', filename=sub.image_path.split('static/')[1]) }}" target="_blank">View Image</a></td>
+                <td class="action-links">
+                    <a href="{{ url_for('handle_submission', submission_id=sub._id, action='approve') }}" class="btn btn-success btn-sm">Approve</a>
+                    <a href="{{ url_for('handle_submission', submission_id=sub._id, action='reject') }}" class="btn btn-danger btn-sm">Reject</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+<p>No pending submissions.</p>
+{% endif %}
+{% endblock %}

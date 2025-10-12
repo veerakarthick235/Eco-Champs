@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Create an Account</h2>
+        <form method="POST">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>School Name</label>
+                <input type="text" name="school" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>City</label>
+                <input type="text" name="city" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>I am a...</label>
+                <select name="role" class="form-control" required>
+                    <option value="student">Student</option>
+                    <option value="teacher">Teacher / Coordinator</option>
+                </select>
+            </div>
+            <button type="submit" class="btn">Register</button>
+        </form>
+        <p class="auth-switch">Already have an account? <a href="{{ url_for('login') }}">Login here</a>.</p>
+    </div>
+</div>
+{% endblock %}

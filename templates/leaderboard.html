@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Leaderboards</h1>
+<div class="leaderboard-container">
+    <div class="leaderboard-card">
+        <h2>Top 10 Cities</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>City</th>
+                    <th>Total Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for leader in city_leaders %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ leader._id }}</td>
+                    <td>{{ leader.total_points }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="leaderboard-card">
+        <h2>Top 10 Schools</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>School</th>
+                    <th>Total Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                 {% for leader in school_leaders %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ leader._id }}</td>
+                    <td>{{ leader.total_points }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

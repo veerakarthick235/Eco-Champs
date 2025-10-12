@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Environmental Quiz</h1>
+<p>Test your knowledge! A new quiz will be generated for you by our AI assistant.</p>
+
+<div id="quiz-setup">
+    <label for="quiz-topic">Select a Topic:</label>
+    <select id="quiz-topic">
+        <option value="Waste Management in India">Waste Management</option>
+        <option value="Water Conservation">Water Conservation</option>
+        <option value="Renewable Energy Sources">Renewable Energy</option>
+        <option value="Air Pollution in Indian Cities">Air Pollution</option>
+        <option value="Indian Biodiversity and Conservation">Biodiversity</option>
+        <option value="Plastic Waste Management">Plastic Waste</option>
+        <option value="E-Waste in India">E-Waste</option>
+        <option value="Deforestation and its Impact">Deforestation</option>
+        <option value="Soil Conservation Methods">Soil Conservation</option>
+        <option value="Sustainable Agriculture">Sustainable Agriculture</option>
+    </select>
+    <button id="start-quiz-btn" class="btn">Start Quiz</button>
+</div>
+
+<div id="quiz-main-container" class="hidden">
+    <div id="question-display-area">
+        </div>
+
+    <div id="question-palette-container">
+        <h4>Question Palette</h4>
+        <div id="question-palette">
+            </div>
+        <div class="palette-legend">
+            <div><span class="legend-box answered"></span> Answered</div>
+            <div><span class="legend-box not-answered"></span> Not Answered</div>
+            <div><span class="legend-box marked-for-review"></span> Marked for Review</div>
+        </div>
+    </div>
+</div>
+
+<div id="quiz-navigation" class="hidden">
+    <button id="prev-btn" class="btn">Previous</button>
+    <button id="next-btn" class="btn">Next</button>
+    <button id="mark-review-btn" class="btn btn-warning">Mark for Review</button>
+    <button id="submit-quiz-btn" class="btn btn-danger">Submit Quiz</button>
+</div>
+
+<div id="quiz-result" class="hidden">
+    </div>
+{% endblock %}
