@@ -46,32 +46,6 @@ else:
     users_collection = challenges_collection = submissions_collection = None
 
 
-# --- Pre-load Quizzes on Startup (Try API, Catch for Fallback) ---
-quiz_cache = {}
-quiz_topics = [
-    "Waste Management in India", "Water Conservation", "Renewable Energy Sources",
-    "Air Pollution in Indian Cities", "Indian Biodiversity and Conservation", "Plastic Waste Management",
-    "E-Waste in India", "Deforestation and its Impact", "Soil Conservation Methods", "Sustainable Agriculture"
-]
-
-def preload_quizzes():
-    print("Pre-loading quizzes (Try API, Catch for Fallback)...")
-    for topic in quiz_topics:
-        print(f"  -> Requesting quiz for: {topic}")
-        # This function will try the API and use the fallback on failure
-        quiz_data = generate_quiz_questions(topic)
-        quiz_cache[topic] = quiz_data
-        
-        # Wait between each API call to respect the rate limit (15 requests/minute)
-        time.sleep(4) 
-    print("✅ All quizzes are loaded and ready.")
-
-# This `if` statement ensures the pre-loading runs only once when the server starts.
-if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or os.environ.get("ENV") == "production":
-    preload_quizzes()
-# --- END of Pre-loading Section ---
-
-
 # --- User Model for Flask-Login ---
 class User(UserMixin):
     def __init__(self, user_data):
@@ -92,7 +66,7 @@ def load_user(user_id):
     user_data = users_collection.find_one({'_id': ObjectId(user_id)})
     return User(user_data) if user_data else None
 
-# --- Decorators and other routes ... (NO CHANGES to the rest of the routes) ---
+# --- Decorators and other routes ... (No changes to the rest of the routes) ---
 def teacher_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -261,10 +235,10 @@ def handle_submission(submission_id, action):
 @login_required
 def get_quiz():
     topic = request.json.get('topic')
-    # This serves the quiz from the cache that was populated at startup.
-    quiz_data = quiz_cache.get(topic)
-    if not quiz_data:
-        return jsonify({"error": "Quiz for this topic is not available."}), 404
+    # This now instantly gets the quiz from the local 'gemini_handler.py' file.
+    quiz_data = generate_quiz_questions(topic)
+    if not quiz_data or not quiz_data.get("questions"):
+        return jsonify({"error": "Failed to load quiz for this topic."}), 500
     session['current_quiz'] = quiz_data
     return jsonify(quiz_data)
 
