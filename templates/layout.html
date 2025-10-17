@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoChamps - Environmental Education</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='1.2') }}">
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -28,6 +30,7 @@
             </ul>
         </div>
     </nav>
+
     <main>
         <div class="container">
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -40,6 +43,7 @@
             {% block content %}{% endblock %}
         </div>
     </main>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+    <script src="{{ url_for('static', filename='js/script.js', v='1.2') }}"></script>
 </body>
 </html>
