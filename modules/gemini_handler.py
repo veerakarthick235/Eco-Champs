@@ -2,320 +2,25 @@ import os
 import google.generativeai as genai
 import json
 
-# --- Comprehensive Fallback Quiz Data ---
-# This dictionary contains a full 25-question quiz for every topic.
-# It is used as a reliable backup if the Gemini API call fails during the app's startup.
-fallback_quiz_data = {
-    "Waste Management in India": {
-        "questions": [
-            {"question_text": "Which city in India was the first to implement a successful door-to-door waste collection system?", "options": ["Surat", "Indore", "Pune", "Mysuru"], "correct_answer": "Surat"},
-            {"question_text": "What does the 'Swachh Bharat Abhiyan' primarily aim to achieve?", "options": ["Clean Rivers", "Open Defecation Free India", "Industrial Pollution Control", "Forest Conservation"], "correct_answer": "Open Defecation Free India"},
-            {"question_text": "Vermicomposting is a method of composting using what?", "options": ["Bacteria", "Fungi", "Earthworms", "Chemicals"], "correct_answer": "Earthworms"},
-            {"question_text": "In waste management, what does 'leachate' refer to?", "options": ["A type of compost", "Gas produced from landfills", "Contaminated liquid from waste", "Recycled plastic pellets"], "correct_answer": "Contaminated liquid from waste"},
-            {"question_text": "The Solid Waste Management Rules in India were most recently updated in which year?", "options": ["2000", "2010", "2016", "2020"], "correct_answer": "2016"},
-            {"question_text": "What color bin is typically used for 'dry waste' in India?", "options": ["Green", "Blue", "Red", "Black"], "correct_answer": "Blue"},
-            {"question_text": "Which of the following is NOT a biodegradable waste?", "options": ["Vegetable peels", "Paper", "Glass bottle", "Leftover food"], "correct_answer": "Glass bottle"},
-            {"question_text": "What is the main purpose of a 'Material Recovery Facility' (MRF)?", "options": ["To burn waste for energy", "To sort and process recyclable materials", "To safely store hazardous waste", "To compost organic waste"], "correct_answer": "To sort and process recyclable materials"},
-            {"question_text": "The concept of 'Extended Producer Responsibility' (EPR) makes which party responsible for waste management?", "options": ["Consumer", "Government", "Producer/Manufacturer", "Waste Collector"], "correct_answer": "Producer/Manufacturer"},
-            {"question_text": "Which greenhouse gas is predominantly produced in landfills?", "options": ["Oxygen", "Nitrogen", "Methane", "Hydrogen"], "correct_answer": "Methane"},
-            {"question_text": "What is the 'plogging' activity, promoted in India?", "options": ["Planting trees", "Cleaning beaches", "Picking up litter while jogging", "Creating compost pits"], "correct_answer": "Picking up litter while jogging"},
-            {"question_text": "Which of these is considered domestic hazardous waste?", "options": ["Newspaper", "Expired medicines", "Plastic bags", "Fruit peels"], "correct_answer": "Expired medicines"},
-            {"question_text": "What is incineration in the context of waste management?", "options": ["Burying waste", "Composting waste", "Burning waste at high temperatures", "Recycling waste"], "correct_answer": "Burning waste at high temperatures"},
-            {"question_text": "The 'Gobar-Dhan' scheme promotes the use of what as a resource?", "options": ["Plastic waste", "Cattle dung and solid waste", "E-waste", "Fly ash"], "correct_answer": "Cattle dung and solid waste"},
-            {"question_text": "What is the primary environmental concern with single-use plastics?", "options": ["They are expensive", "They are non-biodegradable and pollute ecosystems", "They are difficult to manufacture", "They release harmful gases when produced"], "correct_answer": "They are non-biodegradable and pollute ecosystems"},
-            {"question_text": "Which Indian state was the first to ban plastic bags?", "options": ["Kerala", "Maharashtra", "Himachal Pradesh", "Sikkim"], "correct_answer": "Himachal Pradesh"},
-            {"question_text": "What does 'zero-waste' lifestyle aim for?", "options": ["Recycling 100% of waste", "Minimizing waste generation to near zero", "Using only biodegradable products", "Composting all organic waste"], "correct_answer": "Minimizing waste generation to near zero"},
-            {"question_text": "A technology developed in India uses which waste to construct roads?", "options": ["E-waste", "Plastic waste", "Medical waste", "Agricultural waste"], "correct_answer": "Plastic waste"},
-            {"question_text": "What is the main challenge with landfill sites in major Indian cities?", "options": ["They are too small", "They are reaching full capacity", "They are located in remote areas", "They only accept organic waste"], "correct_answer": "They are reaching full capacity"},
-            {"question_text": "The CPCB in India stands for?", "options": ["Central Pollution Control Board", "City Pollution Cleaning Bureau", "Central Project for Clean Bays", "Coastal Pollution Control Board"], "correct_answer": "Central Pollution Control Board"},
-            {"question_text": "Which of the following is an example of 'upcycling'?", "options": ["Melting plastic bottles to make new ones", "Making a chair out of old tires", "Composting vegetable scraps", "Shredding paper for packaging"], "correct_answer": "Making a chair out of old tires"},
-            {"question_text": "Which metro city is known for its large-scale waste-to-energy plant at Ghazipur?", "options": ["Mumbai", "Kolkata", "Chennai", "Delhi"], "correct_answer": "Delhi"},
-            {"question_text": "What is the primary component of Construction and Demolition (C&D) waste?", "options": ["Wood", "Plastic", "Concrete, bricks, and masonry", "Metal"], "correct_answer": "Concrete, bricks, and masonry"},
-            {"question_text": "In the 3 R's, which action is considered the most effective for waste management?", "options": ["Recycle", "Reuse", "Reduce", "Recover"], "correct_answer": "Reduce"},
-            {"question_text": "What is a major source of marine litter in India?", "options": ["Industrial discharge", "Improperly managed plastic waste", "Oil spills", "Agricultural runoff"], "correct_answer": "Improperly managed plastic waste"}
-        ]
-    },
-    "Water Conservation": {
-        "questions": [
-            {"question_text": "Which ancient water harvesting structure is famous in Rajasthan?", "options": ["Johads", "Ahar Pynes", "Zings", "Kattas"], "correct_answer": "Johads"},
-            {"question_text": "The 'Jal Shakti Abhiyan' was launched by the Government of India for what purpose?", "options": ["River linking", "Water conservation and water security", "Building large dams", "Providing bottled water"], "correct_answer": "Water conservation and water security"},
-            {"question_text": "What is rainwater harvesting?", "options": ["Storing rainwater for future use", "Purifying rainwater", "Preventing rain", "Diverting rainwater to the sea"], "correct_answer": "Storing rainwater for future use"},
-            {"question_text": "Drip irrigation is a method that helps in water conservation by...", "options": ["Spraying water over a large area", "Flooding the entire field", "Delivering water directly to the plant roots", "Using canals for water flow"], "correct_answer": "Delivering water directly to the plant roots"},
-            {"question_text": "Which state in India has made rainwater harvesting structures compulsory for all houses?", "options": ["Kerala", "Maharashtra", "Tamil Nadu", "Punjab"], "correct_answer": "Tamil Nadu"},
-            {"question_text": "What is a 'percolation pit' used for?", "options": ["Storing water for drinking", "Filtering water", "Recharging groundwater", "Generating electricity"], "correct_answer": "Recharging groundwater"},
-            {"question_text": "The 'National Water Mission' is a part of which larger action plan?", "options": ["Swachh Bharat Abhiyan", "National Action Plan on Climate Change", "Make in India", "Digital India"], "correct_answer": "National Action Plan on Climate Change"},
-            {"question_text": "Which of the following daily activities consumes the most water in an average Indian household?", "options": ["Drinking", "Cooking", "Bathing and Toilets", "Washing clothes"], "correct_answer": "Bathing and Toilets"},
-            {"question_text": "What is 'greywater'?", "options": ["Water from toilets", "Water from rivers", "Relatively clean waste water from baths, sinks, and washing machines", "Industrially polluted water"], "correct_answer": "Relatively clean waste water from baths, sinks, and washing machines"},
-            {"question_text": "The 'Paani Bachao, Paise Kamao' scheme in Punjab encourages farmers to do what?", "options": ["Use more water", "Reduce electricity and water consumption for irrigation", "Install more tube wells", "Grow water-intensive crops"], "correct_answer": "Reduce electricity and water consumption for irrigation"},
-            {"question_text": "What is the primary cause of water scarcity in many parts of India?", "options": ["Lack of rainfall", "Over-extraction of groundwater", "Too many rivers", "Melting glaciers"], "correct_answer": "Over-extraction of groundwater"},
-            {"question_text": "A 'check dam' is a small dam built across a stream to...", "options": ["Generate large scale electricity", "Stop water flow completely", "Slow down water flow and recharge groundwater", "For boating and recreation"], "correct_answer": "Slow down water flow and recharge groundwater"},
-            {"question_text": "Which movement was led by Rajendra Singh, also known as the 'Waterman of India'?", "options": ["Chipko Movement", "Narmada Bachao Andolan", "Revival of traditional water harvesting structures in Rajasthan", "Ganga Action Plan"], "correct_answer": "Revival of traditional water harvesting structures in Rajasthan"},
-            {"question_text": "What is water footprint?", "options": ["The amount of water on your feet", "The total volume of freshwater used to produce goods and services", "The area covered by a river", "A map of water bodies"], "correct_answer": "The total volume of freshwater used to produce goods and services"},
-            {"question_text": "The 'Mission Kakatiya' program in Telangana focuses on...", "options": ["Building new dams", "Restoring minor irrigation tanks and lakes", "Inter-linking of rivers", "Promoting drip irrigation"], "correct_answer": "Restoring minor irrigation tanks and lakes"},
-            {"question_text": "Which of the following is a water-efficient method of farming?", "options": ["Flood irrigation", "System of Rice Intensification (SRI)", "Canal irrigation", "Tube well irrigation"], "correct_answer": "System of Rice Intensification (SRI)"},
-            {"question_text": "What is the main source of fresh water in India?", "options": ["Oceans", "Monsoon Rains", "Glaciers", "Underground caves"], "correct_answer": "Monsoon Rains"},
-            {"question_text": "Water pollution by arsenic is a major problem in which Indian state?", "options": ["Gujarat", "Kerala", "West Bengal", "Odisha"], "correct_answer": "West Bengal"},
-            {"question_text": "What does BIS stand for in the context of water quality?", "options": ["Bureau of Indian Standards", "Board of Irrigation Services", "Bureau of Integrated Streams", "Board of Indian Sanitation"], "correct_answer": "Bureau of Indian Standards"},
-            {"question_text": "What is a simple way to conserve water at home?", "options": ["Taking longer showers", "Leaving the tap running while brushing", "Fixing leaky taps immediately", "Washing one cloth at a time"], "correct_answer": "Fixing leaky taps immediately"},
-            {"question_text": "The largest river basin in India belongs to which river?", "options": ["Brahmaputra", "Ganga", "Godavari", "Indus"], "correct_answer": "Ganga"},
-            {"question_text": "Xeriscaping is a landscaping method used to...", "options": ["Increase water usage", "Create water parks", "Reduce or eliminate the need for supplemental water from irrigation", "Grow plants in water"], "correct_answer": "Reduce or eliminate the need for supplemental water from irrigation"},
-            {"question_text": "The Central Ground Water Authority (CGWA) was established under which Act?", "options": ["Water (Prevention and Control of Pollution) Act, 1974", "Air (Prevention and Control of Pollution) Act, 1981", "Environment (Protection) Act, 1986", "Forest (Conservation) Act, 1980"], "correct_answer": "Environment (Protection) Act, 1986"},
-            {"question_text": "What is virtual water trade?", "options": ["Trading bottled water online", "The hidden flow of water in food or other commodities when they are traded", "A video game about water", "Selling water purification technology"], "correct_answer": "The hidden flow of water in food or other commodities when they are traded"},
-            {"question_text": "Which of these is NOT a traditional water harvesting system in India?", "options": ["Talabs", "Baolis", "Jhalaras", "Canals from large dams"], "correct_answer": "Canals from large dams"}
-        ]
-    },
-    "Renewable Energy Sources": {
-        "questions": [
-            {"question_text": "Which of the following is NOT a renewable energy source?", "options": ["Solar", "Wind", "Natural Gas", "Geothermal"], "correct_answer": "Natural Gas"},
-            {"question_text": "What type of energy is derived from the sun?", "options": ["Geothermal energy", "Solar energy", "Wind energy", "Hydroelectric energy"], "correct_answer": "Solar energy"},
-            {"question_text": "India's largest wind farm is located in which state?", "options": ["Gujarat", "Rajasthan", "Tamil Nadu", "Maharashtra"], "correct_answer": "Tamil Nadu"},
-            {"question_text": "What device is used to convert sunlight directly into electricity?", "options": ["Wind turbine", "Solar panel (Photovoltaic cell)", "Generator", "Geothermal plant"], "correct_answer": "Solar panel (Photovoltaic cell)"},
-            {"question_text": "Biogas is primarily composed of which gas?", "options": ["Methane", "Oxygen", "Hydrogen", "Propane"], "correct_answer": "Methane"},
-            {"question_text": "Hydroelectric power is generated from what?", "options": ["Heat from the earth", "Burning of fossil fuels", "Force of moving water", "Energy from the sun"], "correct_answer": "Force of moving water"},
-            {"question_text": "The 'KUSUM' scheme by the Indian government is related to...", "options": ["Rooftop solar panels for homes", "Solar-powered agricultural pumps", "Large-scale wind farms", "Electric vehicles"], "correct_answer": "Solar-powered agricultural pumps"},
-            {"question_text": "Geothermal energy is derived from...", "options": ["The wind", "The sun's rays", "The heat within the Earth", "Ocean tides"], "correct_answer": "The heat within the Earth"},
-            {"question_text": "The International Solar Alliance (ISA) was launched in 2015 and its headquarters is in which Indian city?", "options": ["New Delhi", "Mumbai", "Gurugram", "Bengaluru"], "correct_answer": "Gurugram"},
-            {"question_text": "What is a major disadvantage of wind power?", "options": ["It produces a lot of pollution", "The wind is not always consistent", "The fuel is very expensive", "It requires a lot of water"], "correct_answer": "The wind is not always consistent"},
-            {"question_text": "The Bhadla Solar Park, one of the largest in the world, is located in...", "options": ["Gujarat", "Andhra Pradesh", "Rajasthan", "Madhya Pradesh"], "correct_answer": "Rajasthan"},
-            {"question_text": "Which of these is an example of biomass?", "options": ["Coal", "Petroleum", "Agricultural crop residues", "Iron ore"], "correct_answer": "Agricultural crop residues"},
-            {"question_text": "What is tidal energy?", "options": ["Energy from volcanoes", "Energy generated from the rise and fall of ocean tides", "Energy from hot springs", "Energy from burning wood"], "correct_answer": "Energy generated from the rise and fall of ocean tides"},
-            {"question_text": "The Ministry responsible for renewable energy in India is?", "options": ["Ministry of Power", "Ministry of New and Renewable Energy (MNRE)", "Ministry of Environment, Forest and Climate Change", "Ministry of Coal"], "correct_answer": "Ministry of New and Renewable Energy (MNRE)"},
-            {"question_text": "What is the primary benefit of using renewable energy sources?", "options": ["They are cheaper than fossil fuels in all cases", "They are available everywhere", "They produce little to no greenhouse gas emissions", "They are easy to store"], "correct_answer": "They produce little to no greenhouse gas emissions"},
-            {"question_text": "Which Indian state is the largest producer of solar energy?", "options": ["Karnataka", "Rajasthan", "Gujarat", "Tamil Nadu"], "correct_answer": "Rajasthan"},
-            {"question_text": "What is Ocean Thermal Energy Conversion (OTEC)?", "options": ["Using ocean waves for power", "Using ocean tides for power", "Using the temperature difference between deep and shallow ocean water to generate electricity", "Using salt from the ocean for power"], "correct_answer": "Using the temperature difference between deep and shallow ocean water to generate electricity"},
-            {"question_text": "A 'solar cooker' is a device that uses...", "options": ["Electricity", "Natural gas", "Direct sunlight to heat or cook food", "Biogas"], "correct_answer": "Direct sunlight to heat or cook food"},
-            {"question_text": "The 'Puga Valley' in Ladakh is known for its potential in which renewable energy?", "options": ["Solar", "Wind", "Geothermal", "Tidal"], "correct_answer": "Geothermal"},
-            {"question_text": "What does a 'wind turbine' do?", "options": ["Creates wind", "Converts wind's kinetic energy into electrical energy", "Measures wind speed", "Stores wind"], "correct_answer": "Converts wind's kinetic energy into electrical energy"},
-            {"question_text": "Which of the following is a challenge for solar power generation?", "options": ["It works at night", "It requires no space", "Power generation is dependent on weather conditions", "It is highly polluting"], "correct_answer": "Power generation is dependent on weather conditions"},
-            {"question_text": "A 'run-of-the-river' hydroelectricity project is considered more environmentally friendly because...", "options": ["It uses more water", "It does not require a large dam and reservoir", "It produces more power", "It is built in cities"], "correct_answer": "It does not require a large dam and reservoir"},
-            {"question_text": "What is the name of India's first solar-powered ferry, launched in Kerala?", "options": ["Surya", "Aditya", "Pawan", "Jal Hans"], "correct_answer": "Aditya"},
-            {"question_text": "Gasohol is a fuel which is a mixture of gasoline and...?", "options": ["Methane", "Diesel", "Ethanol", "Kerosene"], "correct_answer": "Ethanol"},
-            {"question_text": "The National Institute of Wind Energy is located in which Indian city?", "options": ["Mumbai", "Bengaluru", "Hyderabad", "Chennai"], "correct_answer": "Chennai"}
-        ]
-    },
-    "Air Pollution in Indian Cities": {
-        "questions": [
-            {"question_text": "What does AQI stand for?", "options": ["Air Quality Index", "Air Quantity Index", "Air Pollution Index", "Atmospheric Quality Indicator"], "correct_answer": "Air Quality Index"},
-            {"question_text": "Which pollutant is measured as PM2.5?", "options": ["Large dust particles", "Fine particulate matter smaller than 2.5 micrometers", "Sulphur dioxide", "Carbon monoxide"], "correct_answer": "Fine particulate matter smaller than 2.5 micrometers"},
-            {"question_text": "What is a primary cause of winter smog in North India, especially Delhi?", "options": ["Industrial emissions", "Vehicular pollution", "Stubble burning in neighboring states", "All of the above"], "correct_answer": "All of the above"},
-            {"question_text": "The 'SAFAR' system, implemented in many Indian cities, does what?", "options": ["Reduces traffic congestion", "Monitors and forecasts air quality", "Promotes electric vehicles", "Manages waste collection"], "correct_answer": "Monitors and forecasts air quality"},
-            {"question_text": "Which gas, emitted from vehicles, is a major contributor to air pollution?", "options": ["Oxygen", "Nitrogen", "Carbon Monoxide", "Helium"], "correct_answer": "Carbon Monoxide"},
-            {"question_text": "The 'National Clean Air Programme' (NCAP) aims to reduce particulate matter pollution by 20-30% by which year?", "options": ["2022", "2024", "2025", "2030"], "correct_answer": "2024"},
-            {"question_text": "What is a major health risk associated with long-term exposure to PM2.5?", "options": ["Improved lung capacity", "Respiratory and cardiovascular diseases", "Better eyesight", "Stronger bones"], "correct_answer": "Respiratory and cardiovascular diseases"},
-            {"question_text": "Which of these is NOT a primary air pollutant?", "options": ["Sulphur dioxide (SO2)", "Carbon monoxide (CO)", "Ozone (O3)", "Lead (Pb)"], "correct_answer": "Ozone (O3)"},
-            {"question_text": "What was the 'Odd-Even' scheme implemented in Delhi for?", "options": ["To conserve water", "To reduce vehicular pollution", "To manage electricity supply", "To schedule waste pickup"], "correct_answer": "To reduce vehicular pollution"},
-            {"question_text": "Which festival in India is often associated with a temporary spike in air pollution?", "options": ["Holi", "Diwali", "Eid", "Christmas"], "correct_answer": "Diwali"},
-            {"question_text": "What does a catalytic converter in a car do?", "options": ["Improves mileage", "Cools the engine", "Reduces toxic pollutants from exhaust fumes", "Increases speed"], "correct_answer": "Reduces toxic pollutants from exhaust fumes"},
-            {"question_text": "Fly ash, a major pollutant, is a byproduct of which industry?", "options": ["Textile industry", "IT industry", "Thermal power plants (burning coal)", "Food processing"], "correct_answer": "Thermal power plants (burning coal)"},
-            {"question_text": "Acid rain is caused by the atmospheric pollution of which gases?", "options": ["Oxygen and Nitrogen", "Methane and Carbon Dioxide", "Sulphur dioxide and Nitrogen oxides", "Ozone and Helium"], "correct_answer": "Sulphur dioxide and Nitrogen oxides"},
-            {"question_text": "Which type of fuel standard is currently implemented across India to reduce vehicular pollution?", "options": ["Bharat Stage II (BS-II)", "Bharat Stage IV (BS-IV)", "Bharat Stage VI (BS-VI)", "Bharat Stage VIII (BS-VIII)"], "correct_answer": "Bharat Stage VI (BS-VI)"},
-            {"question_text": "What is a simple way to improve indoor air quality?", "options": ["Keeping windows closed at all times", "Using more air fresheners", "Keeping indoor plants and ensuring good ventilation", "Burning incense sticks"], "correct_answer": "Keeping indoor plants and ensuring good ventilation"},
-            {"question_text": "The Taj Mahal in Agra is being affected by which type of pollution?", "options": ["Water pollution from Yamuna", "Noise pollution", "Air pollution causing the marble to yellow", "Soil pollution"], "correct_answer": "Air pollution causing the marble to yellow"},
-            {"question_text": "What is a 'smog tower'?", "options": ["A decorative monument", "A large-scale air purifier", "A mobile phone tower", "A weather forecasting station"], "correct_answer": "A large-scale air purifier"},
-            {"question_text": "What is the primary source of sulphur dioxide (SO2) pollution?", "options": ["Vehicles", "Burning of fossil fuels like coal and oil", "Agriculture", "Household cooking"], "correct_answer": "Burning of fossil fuels like coal and oil"},
-            {"question_text": "An AQI value between 301 and 400 is categorized as?", "options": ["Good", "Moderate", "Poor", "Very Poor"], "correct_answer": "Very Poor"},
-            {"question_text": "Which city is often cited as one of the most polluted major cities in the world?", "options": ["Chennai", "Mumbai", "Delhi", "Bengaluru"], "correct_answer": "Delhi"},
-            {"question_text": "The 'Green Muffler' technique is used to reduce which type of pollution?", "options": ["Air pollution", "Water pollution", "Soil pollution", "Noise pollution"], "correct_answer": "Noise pollution"},
-            {"question_text": "What is photochemical smog?", "options": ["Smog caused by fog and smoke", "Smog that occurs only at night", "A type of air pollution produced when sunlight reacts with nitrogen oxides", "Smog from chemical factories"], "correct_answer": "A type of air pollution produced when sunlight reacts with nitrogen oxides"},
-            {"question_text": "Which of these is a 'green' alternative to traditional petrol/diesel cars?", "options": ["Electric Vehicles (EVs)", "Cars with larger engines", "Cars with modified exhausts", "Older car models"], "correct_answer": "Electric Vehicles (EVs)"},
-            {"question_text": "The Air (Prevention and Control of Pollution) Act was enacted in India in which year?", "options": ["1974", "1981", "1986", "2002"], "correct_answer": "1981"},
-            {"question_text": "What is a major contributor to indoor air pollution in rural India?", "options": ["Air conditioners", "Burning of solid fuels (wood, cow dung) for cooking", "Electronic gadgets", "Excessive furniture"], "correct_answer": "Burning of solid fuels (wood, cow dung) for cooking"}
-        ]
-    },
-    "Indian Biodiversity and Conservation": {
-        "questions": [
-            {"question_text": "Which is the national animal of India?", "options": ["Lion", "Elephant", "Tiger", "Leopard"], "correct_answer": "Tiger"},
-            {"question_text": "'Project Tiger', one of the most successful conservation programs, was launched in which year?", "options": ["1965", "1973", "1982", "1991"], "correct_answer": "1973"},
-            {"question_text": "The Kaziranga National Park in Assam is famous for which animal?", "options": ["Bengal Tiger", "Asiatic Lion", "One-horned Rhinoceros", "Snow Leopard"], "correct_answer": "One-horned Rhinoceros"},
-            {"question_text": "The Western Ghats in India are recognized as a...", "options": ["Desert area", "Cold desert", "Biodiversity hotspot", "Grassland"], "correct_answer": "Biodiversity hotspot"},
-            {"question_text": "The Gir National Park in Gujarat is the only natural habitat of which animal?", "options": ["Bengal Tiger", "Asiatic Lion", "Indian Elephant", "Gaur"], "correct_answer": "Asiatic Lion"},
-            {"question_text": "What was the 'Chipko Movement' primarily about?", "options": ["Saving tigers", "Cleaning rivers", "Preventing deforestation by hugging trees", "Conserving water"], "correct_answer": "Preventing deforestation by hugging trees"},
-            {"question_text": "Which of these is an example of an 'endemic' species to India?", "options": ["African Elephant", "Kangaroo", "Lion-tailed Macaque", "Polar Bear"], "correct_answer": "Lion-tailed Macaque"},
-            {"question_text": "The Sundarbans, a UNESCO World Heritage Site, is the world's largest...", "options": ["Tropical rainforest", "Desert", "Mangrove forest", "Grassland"], "correct_answer": "Mangrove forest"},
-            {"question_text": "What does 'in-situ conservation' mean?", "options": ["Conserving species in their natural habitat", "Conserving species in artificial habitats like zoos", "Cryopreservation of genes", "Studying species in a lab"], "correct_answer": "Conserving species in their natural habitat"},
-            {"question_text": "Which of these is a major threat to biodiversity in India?", "options": ["Afforestation", "Habitat loss and fragmentation", "Creation of national parks", "Strict wildlife laws"], "correct_answer": "Habitat loss and fragmentation"},
-            {"question_text": "The 'Red Data Book' contains information about...", "options": ["Commonly found species", "Endangered and threatened species", "Forest cover", "Water resources"], "correct_answer": "Endangered and threatened species"},
-            {"question_text": "Keoladeo National Park in Rajasthan is a famous avifauna sanctuary, known for...", "options": ["Migratory birds like the Siberian Crane", "Peacocks", "Vultures", "Hornbills"], "correct_answer": "Migratory birds like the Siberian Crane"},
-            {"question_text": "The Wildlife Protection Act of India was enacted in which year?", "options": ["1947", "1972", "1986", "2001"], "correct_answer": "1972"},
-            {"question_text": "Which state is known as the 'Tiger State' of India for having the highest number of tigers?", "options": ["Karnataka", "Uttarakhand", "Madhya Pradesh", "Maharashtra"], "correct_answer": "Madhya Pradesh"},
-            {"question_text": "What is a 'biosphere reserve'?", "options": ["An area just for animals", "A protected area for conserving biodiversity and traditional human life", "A place for scientific experiments only", "A large zoo"], "correct_answer": "A protected area for conserving biodiversity and traditional human life"},
-            {"question_text": "The Silent Valley National Park, known for its pristine rainforest, is located in which state?", "options": ["Tamil Nadu", "Karnataka", "Kerala", "Andhra Pradesh"], "correct_answer": "Kerala"},
-            {"question_text": "The 'Ganges River Dolphin' is India's national...", "options": ["National fish", "National aquatic animal", "National reptile", "National amphibian"], "correct_answer": "National aquatic animal"},
-            {"question_text": "'Jhum cultivation' or slash-and-burn agriculture is a major cause of deforestation in which region of India?", "options": ["Western Ghats", "Thar Desert", "North-Eastern states", "Coastal plains"], "correct_answer": "North-Eastern states"},
-            {"question_text": "The 'Sacred Groves' are examples of...", "options": ["Government-owned forests", "Community-led conservation of forests", "Man-made forests", "Commercial plantations"], "correct_answer": "Community-led conservation of forests"},
-            {"question_text": "Hemis National Park in Ladakh is famous for which elusive animal?", "options": ["Bengal Tiger", "One-horned Rhino", "Asiatic Lion", "Snow Leopard"], "correct_answer": "Snow Leopard"},
-            {"question_text": "What is an 'ex-situ conservation' method?", "options": ["National Park", "Wildlife Sanctuary", "Botanical Garden", "Biosphere Reserve"], "correct_answer": "Botanical Garden"},
-            {"question_text": "The Olive Ridley turtles are famous for their mass nesting at beaches in which Indian state?", "options": ["Goa", "Kerala", "Odisha", "Gujarat"], "correct_answer": "Odisha"},
-            {"question_text": "The National Biodiversity Authority (NBA) of India is headquartered in...", "options": ["Delhi", "Mumbai", "Kolkata", "Chennai"], "correct_answer": "Chennai"},
-            {"question_text": "The state bird of Tamil Nadu, the Emerald Dove, is also known as...", "options": ["Mayil", "Kuyil", "Pura", "Pachai Pura"], "correct_answer": "Pachai Pura"},
-            {"question_text": "The term 'hotspot of biodiversity' was coined by...", "options": ["M. S. Swaminathan", "Salim Ali", "Norman Myers", "Vandana Shiva"], "correct_answer": "Norman Myers"}
-        ]
-    },
-    "Plastic Waste Management": {
-        "questions": [
-            {"question_text": "What does the term 'single-use plastic' refer to?", "options": ["Plastic that can be used only by one person", "Plastic items intended to be used only once before being thrown away", "A very strong type of plastic", "Recycled plastic"], "correct_answer": "Plastic items intended to be used only once before being thrown away"},
-            {"question_text": "India announced a nationwide ban on many single-use plastic items starting from which date?", "options": ["January 1, 2022", "July 1, 2022", "October 2, 2021", "August 15, 2023"], "correct_answer": "July 1, 2022"},
-            {"question_text": "What does PET or PETE stand for, commonly found in water bottles?", "options": ["Polyethylene terephthalate", "Polystyrene", "Polyvinyl chloride", "Polypropylene"], "correct_answer": "Polyethylene terephthalate"},
-            {"question_text": "The Plastic Waste Management Rules in India mandate the minimum thickness for plastic carry bags to be...", "options": ["20 microns", "50 microns", "75 microns, increasing to 120 microns", "200 microns"], "correct_answer": "75 microns, increasing to 120 microns"},
-            {"question_text": "What are microplastics?", "options": ["Small plastic toys", "Very small plastic particles less than 5mm in size", "A brand of plastic", "A type of bioplastic"], "correct_answer": "Very small plastic particles less than 5mm in size"},
-            {"question_text": "What is the primary objective of 'Extended Producer Responsibility' (EPR) for plastic waste?", "options": ["To make consumers recycle", "To make producers responsible for the collection and recycling of their plastic products", "To ban all plastics", "To increase the cost of plastic"], "correct_answer": "To make producers responsible for the collection and recycling of their plastic products"},
-            {"question_text": "Which of these is a 'bioplastic'?", "options": ["PET", "PVC", "Polylactic Acid (PLA)", "HDPE"], "correct_answer": "Polylactic Acid (PLA)"},
-            {"question_text": "Pyrolysis is a process that can convert plastic waste into...", "options": ["Compost", "Fuel oil", "New plastic bottles", "Paper"], "correct_answer": "Fuel oil"},
-            {"question_text": "A major environmental problem caused by plastic bags is...", "options": ["They are very expensive", "They are lightweight and fly away easily", "They choke drains and harm marine life", "They cannot hold heavy items"], "correct_answer": "They choke drains and harm marine life"},
-            {"question_text": "Which of these symbols indicates that a plastic is recyclable?", "options": ["A green dot", "A skull and crossbones", "The Mobius loop (three chasing arrows)", "A red cross"], "correct_answer": "The Mobius loop (three chasing arrows)"},
-            {"question_text": "What is a 'plastic credit' model?", "options": ["A loan to buy plastic", "A system where companies can fund plastic waste collection and recycling projects", "A discount on plastic items", "A type of credit card made of plastic"], "correct_answer": "A system where companies can fund plastic waste collection and recycling projects"},
-            {"question_text": "Which type of plastic is commonly used for milk jugs and shampoo bottles?", "options": ["PET (1)", "HDPE (2)", "PVC (3)", "PS (6)"], "correct_answer": "HDPE (2)"},
-            {"question_text": "The 'Great Pacific Garbage Patch' is a large collection of what in the ocean?", "options": ["Seaweed", "Marine debris and plastic", "Sunken ships", "A natural island"], "correct_answer": "Marine debris and plastic"},
-            {"question_text": "What is a good alternative to plastic cutlery for takeaways?", "options": ["Styrofoam cutlery", "Wooden or bamboo cutlery", "Thicker plastic cutlery", "Using hands only"], "correct_answer": "Wooden or bamboo cutlery"},
-            {"question_text": "What does 'biodegradable' mean in the context of plastics?", "options": ["It can be recycled", "It can be broken down by microorganisms into natural substances", "It is very durable", "It is made from plants"], "correct_answer": "It can be broken down by microorganisms into natural substances"},
-            {"question_text": "Which Indian scientist is known for developing a method to use plastic waste in road construction?", "options": ["C.V. Raman", "A.P.J. Abdul Kalam", "Rajagopalan Vasudevan", "M.S. Swaminathan"], "correct_answer": "Rajagopalan Vasudevan"},
-            {"question_text": "What is a major challenge in recycling multi-layered plastic (MLP), like in chip bags?", "options": ["It is too thin", "It contains food waste", "It is made of several different layers of materials that are hard to separate", "It has no value"], "correct_answer": "It is made of several different layers of materials that are hard to separate"},
-            {"question_text": "The term 'nurdles' refers to...", "options": ["A type of sea creature", "Pre-production plastic pellets", "A brand of noodles", "A tool for cleaning plastic"], "correct_answer": "Pre-production plastic pellets"},
-            {"question_text": "What is the best first step to reduce personal plastic consumption?", "options": ["Recycling all plastic", "Refusing single-use plastics like straws and bags", "Buying bottled water", "Using plastic containers for storage"], "correct_answer": "Refusing single-use plastics like straws and bags"},
-            {"question_text": "PVC (Polyvinyl Chloride) is a plastic that can release harmful chemicals called...", "options": ["Vitamins", "Proteins", "Phthalates and dioxins", "Sugars"], "correct_answer": "Phthalates and dioxins"},
-            {"question_text": "The 'Un-Plastic Collective' is a global initiative co-founded by which Indian organization?", "options": ["Reliance Industries", "Tata Group", "Confederation of Indian Industry (CII)", "Infosys"], "correct_answer": "Confederation of Indian Industry (CII)"},
-            {"question_text": "What is a 'bottle brick' or 'ecobrick'?", "options": ["A brick made of clay", "A PET bottle packed tightly with non-biodegradable waste to create a building block", "A glass bottle", "A type of toy"], "correct_answer": "A PET bottle packed tightly with non-biodegradable waste to create a building block"},
-            {"question_text": "Which of these is NOT a single-use plastic item banned in India?", "options": ["Plastic straws", "Plastic cutlery", "Plastic carry bags above 120 microns", "Earbuds with plastic sticks"], "correct_answer": "Plastic carry bags above 120 microns"},
-            {"question_text": "What is a significant source of microplastic pollution in oceans?", "options": ["Volcanic eruptions", "Synthetic clothing fibers from washing", "Fish breathing", "Rainfall"], "correct_answer": "Synthetic clothing fibers from washing"},
-            {"question_text": "The Central Institute of Petrochemicals Engineering & Technology (CIPET) plays a role in...", "options": ["Banning plastics", "Promoting plastic use", "Research and development in plastics processing and recycling", "Exporting oil"], "correct_answer": "Research and development in plastics processing and recycling"}
-        ]
-    },
-    "E-Waste in India": {
-        "questions": [
-            {"question_text": "What is E-waste?", "options": ["Electronic mail spam", "Discarded electrical and electronic equipment", "Energy waste", "Easy to manage waste"], "correct_answer": "Discarded electrical and electronic equipment"},
-            {"question_text": "The E-Waste (Management) Rules in India came into force in which year?", "options": ["2005", "2011", "2016", "2020"], "correct_answer": "2016"},
-            {"question_text": "Which Indian city is often called the 'Silicon Valley of India' and is a major E-waste producer?", "options": ["Delhi", "Mumbai", "Hyderabad", "Bengaluru"], "correct_answer": "Bengaluru"},
-            {"question_text": "What hazardous material is commonly found in old CRT monitors and televisions?", "options": ["Gold", "Lead", "Plastic", "Aluminium"], "correct_answer": "Lead"},
-            {"question_text": "The concept of 'Extended Producer Responsibility' (EPR) in E-waste management requires whom to be responsible for collection?", "options": ["Consumer", "Government", "Producer of the electronic item", "Scrap dealer"], "correct_answer": "Producer of the electronic item"},
-            {"question_text": "What is a major problem with the informal E-waste recycling sector in India?", "options": ["They are too efficient", "They use unsafe and environmentally damaging methods", "They charge too much", "They don't exist"], "correct_answer": "They use unsafe and environmentally damaging methods"},
-            {"question_text": "Which of these is a precious metal that can be recovered from E-waste?", "options": ["Lead", "Mercury", "Gold", "Cadmium"], "correct_answer": "Gold"},
-            {"question_text": "What is the best first step a consumer should take with an old, working mobile phone?", "options": ["Throw it in the regular dustbin", "Burn it", "Sell it or donate it for reuse", "Break it apart"], "correct_answer": "Sell it or donate it for reuse"},
-            {"question_text": "Which hazardous element is found in CFL bulbs?", "options": ["Mercury", "Arsenic", "Lead", "Copper"], "correct_answer": "Mercury"},
-            {"question_text": "The 'Greenscape' program by a major Indian IT company focuses on what?", "options": ["Planting trees", "Water conservation", "Sustainable E-waste management", "Reducing paper use"], "correct_answer": "Sustainable E-waste management"},
-            {"question_text": "What does the term 'urban mining' refer to?", "options": ["Digging for minerals in cities", "Extracting valuable raw materials from waste streams like E-waste", "A type of video game", "Building underground metro lines"], "correct_answer": "Extracting valuable raw materials from waste streams like E-waste"},
-            {"question_text": "Which of the following should NOT be disposed of in regular household waste?", "options": ["Vegetable peels", "Old newspapers", "Used batteries", "Cardboard boxes"], "correct_answer": "Used batteries"},
-            {"question_text": "The Basel Convention, which India is a signatory to, regulates what?", "options": ["Air pollution", "Transboundary movements of hazardous wastes and their disposal", "Climate change", "Biodiversity"], "correct_answer": "Transboundary movements of hazardous wastes and their disposal"},
-            {"question_text": "What is the primary health risk for workers in the informal E-waste sector?", "options": ["Exposure to toxic substances like lead and mercury", "Getting bored", "Working long hours", "Lifting heavy objects"], "correct_answer": "Exposure to toxic substances like lead and mercury"},
-            {"question_text": "Which of these is a government-approved method for E-waste disposal?", "options": ["Dumping in landfills", "Handing it over to an authorized recycler or collection center", "Burning it in the open", "Throwing it in a river"], "correct_answer": "Handing it over to an authorized recycler or collection center"},
-            {"question_text": "What is the approximate percentage of E-waste that is managed by the informal sector in India?", "options": ["Less than 10%", "Around 25%", "Around 50%", "Over 90%"], "correct_answer": "Over 90%"},
-            {"question_text": "The 'Take-Back' policy for electronics means...", "options": ["The store can take back the product if you don't like it", "The producer must take back the product at the end of its life", "You can get a refund anytime", "The government takes back the product"], "correct_answer": "The producer must take back the product at the end of its life"},
-            {"question_text": "What is a PRO in the context of E-waste rules?", "options": ["Public Relations Officer", "Producer Responsibility Organisation", "Professional Recycling Operative", "Product Repair Outlet"], "correct_answer": "Producer Responsibility Organisation"},
-            {"question_text": "Which component of a computer has the highest concentration of valuable metals?", "options": ["The plastic casing", "The keyboard", "The printed circuit board (PCB)", "The power cord"], "correct_answer": "The printed circuit board (PCB)"},
-            {"question_text": "What is a major driver for the growth of E-waste in India?", "options": ["People not buying electronics", "Rapid technological advancement and decreasing product lifespans", "Long-lasting products", "Lack of electricity"], "correct_answer": "Rapid technological advancement and decreasing product lifespans"},
-            {"question_text": "Which of these countries is NOT a major exporter of E-waste to developing nations?", "options": ["USA", "European Union countries", "Japan", "India"], "correct_answer": "India"},
-            {"question_text": "The practice of 'refurbishing' electronics is an example of which 'R'?", "options": ["Reduce", "Reuse", "Recycle", "Recover"], "correct_answer": "Reuse"},
-            {"question_text": "What does RoHS stand for in electronics manufacturing?", "options": ["Reduction of Hazardous Substances", "Recycling of Hardware Systems", "Regulation of Harmful Software", "Return of Hardware Safely"], "correct_answer": "Reduction of Hazardous Substances"},
-            {"question_text": "Which mobile phone component contains conflict minerals like cobalt and tantalum?", "options": ["The screen", "The plastic body", "The battery", "The speaker"], "correct_answer": "The battery"},
-            {"question_text": "What is the first step in formal E-waste recycling?", "options": ["Shredding", "Melting", "Manual dismantling and segregation", "Exporting"], "correct_answer": "Manual dismantling and segregation"}
-        ]
-    },
-    "Deforestation and its Impact": {
-        "questions": [
-            {"question_text": "What is the primary definition of deforestation?", "options": ["Harvesting timber sustainably", "The temporary clearing of trees for festivals", "The permanent removal of trees for non-forest use", "Natural forest fires"], "correct_answer": "The permanent removal of trees for non-forest use"},
-            {"question_text": "The famous 'Chipko Movement' to prevent deforestation originated in which Indian state?", "options": ["Himachal Pradesh", "Uttarakhand", "Arunachal Pradesh", "Kerala"], "correct_answer": "Uttarakhand"},
-            {"question_text": "What is the main driver of deforestation in the North-Eastern states of India?", "options": ["Railway construction", "Shifting cultivation (Jhum)", "Urban housing projects", "Industrial estates"], "correct_answer": "Shifting cultivation (Jhum)"},
-            {"question_text": "How does deforestation contribute directly to global warming?", "options": ["It increases oxygen levels", "It reduces the Earth's ability to absorb carbon dioxide", "It cools the atmosphere", "It creates more clouds"], "correct_answer": "It reduces the Earth's ability to absorb carbon dioxide"},
-            {"question_text": "The Forest (Conservation) Act of India, aimed at curbing deforestation, was enacted in which year?", "options": ["1947", "1972", "1980", "2002"], "correct_answer": "1980"},
-            {"question_text": "Loss of forests leads to an increase in which natural disaster?", "options": ["Earthquakes", "Volcanic eruptions", "Floods and landslides", "Tsunamis"], "correct_answer": "Floods and landslides"},
-            {"question_text": "What is 'habitat fragmentation'?", "options": ["Creating new habitats", "The breaking of large, contiguous habitats into smaller, isolated patches", "Connecting different habitats", "Studying animal habitats"], "correct_answer": "The breaking of large, contiguous habitats into smaller, isolated patches"},
-            {"question_text": "Which of these is a major consequence of deforestation on biodiversity?", "options": ["Increase in species population", "Loss of species and potential extinction", "Introduction of new species", "No effect on species"], "correct_answer": "Loss of species and potential extinction"},
-            {"question_text": "The term 'Lungs of the Planet' is often used to describe...", "options": ["Oceans", "Mountains", "Deserts", "Tropical Rainforests"], "correct_answer": "Tropical Rainforests"},
-            {"question_text": "What is afforestation?", "options": ["Cutting down trees", "The process of planting trees in an area where there was no previous tree cover", "Selling forest products", "Studying trees"], "correct_answer": "The process of planting trees in an area where there was no previous tree cover"},
-            {"question_text": "The National Forest Policy of India aims to have what percentage of the country's total area under forest cover?", "options": ["10%", "25%", "33%", "50%"], "correct_answer": "33%"},
-            {"question_text": "Which type of economic activity is a significant cause of deforestation in states like Jharkhand and Odisha?", "options": ["Fishing", "Tourism", "Mining", "IT services"], "correct_answer": "Mining"},
-            {"question_text": "Deforestation disrupts the water cycle primarily by reducing...", "options": ["Evaporation", "Condensation", "Transpiration", "Precipitation"], "correct_answer": "Transpiration"},
-            {"question_text": "What is 'social forestry'?", "options": ["Forestry for commercial profit only", "The management and protection of forests by and for the local communities", "Growing forests in cities", "A social media campaign about forests"], "correct_answer": "The management and protection of forests by and for the local communities"},
-            {"question_text": "The construction of large dams often leads to what kind of deforestation?", "options": ["Selective logging", "Submergence of large forest areas", "Forest fires", "Thinning of canopy"], "correct_answer": "Submergence of large forest areas"},
-            {"question_text": "What is 'reforestation'?", "options": ["Clearing forests for farming", "Re-establishing forest cover in areas where it has been cleared", "Building roads through forests", "Preventing forest growth"], "correct_answer": "Re-establishing forest cover in areas where it has been cleared"},
-            {"question_text": "Which of these is NOT a direct impact of deforestation?", "options": ["Soil erosion", "Increased atmospheric ozone concentration", "Loss of biodiversity", "Climate change"], "correct_answer": "Increased atmospheric ozone concentration"},
-            {"question_text": "The 'Compensatory Afforestation Fund Act' (CAMPA) in India aims to...", "options": ["Fund foreign trips for forest officers", "Provide funds to compensate for forest land diverted for non-forest purposes", "Cut down more forests", "Build resorts in forests"], "correct_answer": "Provide funds to compensate for forest land diverted for non-forest purposes"},
-            {"question_text": "How does deforestation affect indigenous or tribal communities?", "options": ["It improves their lifestyle", "It has no impact", "It disrupts their traditional lifestyle and source of livelihood", "It provides them with city jobs"], "correct_answer": "It disrupts their traditional lifestyle and source of livelihood"},
-            {"question_text": "Which of the following agricultural practices is a leading cause of deforestation globally?", "options": ["Organic farming", "Hydroponics", "Cattle ranching and palm oil cultivation", "Kitchen gardening"], "correct_answer": "Cattle ranching and palm oil cultivation"},
-            {"question_text": "The 'Forest Rights Act, 2006' in India recognizes the rights of...", "options": ["Urban dwellers over forests", "Industrial corporations", "Forest-dwelling tribal communities and other traditional forest dwellers", "Foreign tourists"], "correct_answer": "Forest-dwelling tribal communities and other traditional forest dwellers"},
-            {"question_text": "What is a 'carbon sink'?", "options": ["A type of industrial chimney", "A natural environment that absorbs more carbon than it releases", "A market for selling carbon", "A machine that produces carbon dioxide"], "correct_answer": "A natural environment that absorbs more carbon than it releases"},
-            {"question_text": "What is 'desertification'?", "options": ["The process of creating a desert for tourism", "The process by which fertile land becomes desert, typically as a result of drought or deforestation", "Planting cactus in a region", "A type of weather pattern"], "correct_answer": "The process by which fertile land becomes desert, typically as a result of drought or deforestation"},
-            {"question_text": "The Forest Survey of India (FSI) is headquartered in which city?", "options": ["New Delhi", "Shimla", "Dehradun", "Bhopal"], "correct_answer": "Dehradun"},
-            {"question_text": "What is a simple action an individual can take to combat deforestation?", "options": ["Use more paper", "Reduce consumption of products linked to deforestation (e.g., palm oil)", "Leave lights on", "Drive more often"], "correct_answer": "Reduce consumption of products linked to deforestation (e.g., palm oil)"}
-        ]
-    },
-    "Soil Conservation Methods": {
-        "questions": [
-            {"question_text": "Which type of soil, also known as 'Regur soil', is ideal for growing cotton and is widespread in the Deccan Plateau?", "options": ["Alluvial Soil", "Red Soil", "Laterite Soil", "Black Soil"], "correct_answer": "Black Soil"},
-            {"question_text": "What is the primary purpose of 'contour ploughing'?", "options": ["To increase the speed of water flow", "To plough in straight lines up and down the hill", "To slow down water flow and prevent soil erosion along slopes", "To prepare land for construction"], "correct_answer": "To slow down water flow and prevent soil erosion along slopes"},
-            {"question_text": "What is soil erosion?", "options": ["The formation of new, fertile soil", "The process of adding minerals to the soil", "The wearing away of the topsoil by wind, water, or human activity", "A method of irrigation"], "correct_answer": "The wearing away of the topsoil by wind, water, or human activity"},
-            {"question_text": "Planting rows of trees to create a barrier against wind is known as...", "options": ["Terrace farming", "Strip cropping", "Shelterbelts", "Mulching"], "correct_answer": "Shelterbelts"},
-            {"question_text": "Which of the following human activities is a major cause of soil erosion?", "options": ["Crop rotation", "Deforestation and overgrazing", "Organic farming", "Using drip irrigation"], "correct_answer": "Deforestation and overgrazing"},
-            {"question_text": "What is 'terrace farming'?", "options": ["Growing crops in a greenhouse", "Building step-like platforms on hillsides to cultivate crops", "Farming in a straight line", "Flooding the entire field with water"], "correct_answer": "Building step-like platforms on hillsides to cultivate crops"},
-            {"question_text": "Spreading a layer of organic material like straw or grass on the soil surface is called...", "options": ["Ploughing", "Weeding", "Mulching", "Tilling"], "correct_answer": "Mulching"},
-            {"question_text": "The Government of India's 'Soil Health Card Scheme' provides farmers with information about...", "options": ["The age of their land", "The nutrient status of their soil and fertilizer recommendations", "The types of pests to expect", "Future weather patterns"], "correct_answer": "The nutrient status of their soil and fertilizer recommendations"},
-            {"question_text": "What is 'leaching' of soil?", "options": ["The soil becoming harder", "The loss of water-soluble plant nutrients from the soil due to rain and irrigation", "The gain of nutrients in the soil", "The process of soil drying up"], "correct_answer": "The loss of water-soluble plant nutrients from the soil due to rain and irrigation"},
-            {"question_text": "Which of these is a method to prevent soil erosion in arid and semi-arid regions?", "options": ["Leaving the land barren", "Plugging gullies and planting drought-resistant grasses", "Intensive tilling", "Removing all vegetation"], "correct_answer": "Plugging gullies and planting drought-resistant grasses"},
-            {"question_text": "What is 'crop rotation'?", "options": ["Growing only one crop year after year", "Growing different crops in succession on the same piece of land", "Rotating the farmers who work on the land", "Harvesting crops in a circular motion"], "correct_answer": "Growing different crops in succession on the same piece of land"},
-            {"question_text": "The construction of small barriers or 'bunds' across fields helps to...", "options": ["Increase wind speed", "Conserve soil and water", "Remove topsoil", "Make harvesting easier"], "correct_answer": "Conserve soil and water"},
-            {"question_text": "Gully erosion is an advanced stage of which type of erosion?", "options": ["Wind erosion", "Sheet erosion", "Splash erosion", "Rill erosion"], "correct_answer": "Rill erosion"},
-            {"question_text": "Which type of soil is formed by the intense leaching of rocks in tropical regions with high rainfall?", "options": ["Alluvial soil", "Black soil", "Laterite soil", "Desert soil"], "correct_answer": "Laterite soil"},
-            {"question_text": "How does organic matter (humus) improve soil health?", "options": ["It makes the soil toxic", "It decreases water retention", "It improves soil structure, fertility, and water-holding capacity", "It compacts the soil"], "correct_answer": "It improves soil structure, fertility, and water-holding capacity"},
-            {"question_text": "The Central Soil Salinity Research Institute (CSSRI) in India is located at...", "options": ["Karnal", "Nagpur", "Jodhpur", "Bhopal"], "correct_answer": "Karnal"},
-            {"question_text": "What is 'strip cropping'?", "options": ["Growing crops in one large field", "Growing crops in narrow strips, often alternating with other crops like grass", "Removing strips of crops", "A harvesting technique"], "correct_answer": "Growing crops in narrow strips, often alternating with other crops like grass"},
-            {"question_text": "Which of these is a natural agent of soil erosion?", "options": ["Fertilizers", "Pesticides", "Heavy rainfall and strong winds", "Farming equipment"], "correct_answer": "Heavy rainfall and strong winds"},
-            {"question_text": "What is soil salinization?", "options": ["The process of making soil more fertile", "The increase in salt content in the soil, making it unsuitable for agriculture", "Adding pepper to the soil", "Removing salt from the soil"], "correct_answer": "The increase in salt content in the soil, making it unsuitable for agriculture"},
-            {"question_text": "The National Bureau of Soil Survey and Land Use Planning is headquartered in...", "options": ["Delhi", "Pune", "Nagpur", "Kolkata"], "correct_answer": "Nagpur"},
-            {"question_text": "Planting leguminous crops like peas and beans helps in fixing which nutrient in the soil?", "options": ["Potassium", "Phosphorus", "Nitrogen", "Calcium"], "correct_answer": "Nitrogen"},
-            {"question_text": "What does 'fallow land' mean?", "options": ["Land that is actively being farmed", "Land that is left unplanted for a period to restore its fertility", "Land that is barren desert", "Land used for construction"], "correct_answer": "Land that is left unplanted for a period to restore its fertility"},
-            {"question_text": "The 'badland' topography in the Chambal valley is a result of extensive...", "options": ["Afforestation", "Gully erosion", "Wind deposition", "Volcanic activity"], "correct_answer": "Gully erosion"},
-            {"question_text": "What is the role of microorganisms in soil?", "options": ["They cause diseases to all plants", "They are not important", "They help in decomposing organic matter and nutrient cycling", "They compact the soil"], "correct_answer": "They help in decomposing organic matter and nutrient cycling"},
-            {"question_text": "Which of the following is a physical property of soil?", "options": ["pH level", "Nutrient content", "Soil texture (sand, silt, clay content)", "Organic matter content"], "correct_answer": "Soil texture (sand, silt, clay content)"}
-        ]
-    },
-    "Sustainable Agriculture": {
-        "questions": [
-            {"question_text": "What is the primary goal of sustainable agriculture?", "options": ["To maximize profit in the short term", "To meet society's food needs without compromising the ability of future generations to meet their own", "To use the maximum amount of chemical fertilizers", "To grow only a single type of crop"], "correct_answer": "To meet society's food needs without compromising the ability of future generations to meet their own"},
-            {"question_text": "What is the main principle of organic farming?", "options": ["Using genetically modified (GM) seeds", "Relying on synthetic pesticides and fertilizers", "Farming in harmony with nature, avoiding synthetic inputs", "Clearing forests to create farmland"], "correct_answer": "Farming in harmony with nature, avoiding synthetic inputs"},
-            {"question_text": "A negative environmental impact of the 'Green Revolution' in India was...", "options": ["Decrease in food production", "Improvement in soil quality", "Groundwater depletion and soil degradation", "Increase in biodiversity"], "correct_answer": "Groundwater depletion and soil degradation"},
-            {"question_text": "'Zero Budget Natural Farming' (ZBNF), promoted in India, heavily relies on...", "options": ["Imported fertilizers", "Farm-made inputs derived from cow dung and urine", "Tractors and heavy machinery", "Genetically modified crops"], "correct_answer": "Farm-made inputs derived from cow dung and urine"},
-            {"question_text": "What is a key benefit of crop rotation in sustainable agriculture?", "options": ["It exhausts the soil quickly", "It improves soil health and helps control pests and weeds", "It requires more chemical fertilizers", "It is less profitable"], "correct_answer": "It improves soil health and helps control pests and weeds"},
-            {"question_text": "The government scheme 'Paramparagat Krishi Vikas Yojana' (PKVY) aims to promote...", "options": ["Mechanized farming", "Organic farming", "The use of chemical pesticides", "Export of cash crops"], "correct_answer": "Organic farming"},
-            {"question_text": "What is Integrated Pest Management (IPM)?", "options": ["Using only chemical pesticides to kill pests", "An ecosystem-based strategy that focuses on long-term prevention of pests", "A method to attract more pests to the farm", "Banning all forms of pest control"], "correct_answer": "An ecosystem-based strategy that focuses on long-term prevention of pests"},
-            {"question_text": "Why are millets like Jowar, Bajra, and Ragi considered sustainable crops for India?", "options": ["They require a lot of water and fertilizers", "They are difficult to grow", "They are drought-resistant and require fewer inputs", "They can only grow in cold climates"], "correct_answer": "They are drought-resistant and require fewer inputs"},
-            {"question_text": "What is agroforestry?", "options": ["Growing crops in a forest", "The intentional integration of trees and shrubs into crop and animal farming systems", "Clearing forests for agriculture", "A type of indoor farming"], "correct_answer": "The intentional integration of trees and shrubs into crop and animal farming systems"},
-            {"question_text": "Drip irrigation is a sustainable practice because it...", "options": ["Uses more water than flood irrigation", "Causes soil erosion", "Reduces water consumption by delivering water directly to the plant roots", "Is very expensive and complex"], "correct_answer": "Reduces water consumption by delivering water directly to the plant roots"},
-            {"question_text": "What are bio-fertilizers?", "options": ["Chemically produced fertilizers", "Substances which contain living microorganisms that enhance plant growth", "A type of compost", "Imported fertilizers"], "correct_answer": "Substances which contain living microorganisms that enhance plant growth"},
-            {"question_text": "What does 'monoculture' mean in agriculture?", "options": ["Growing multiple crops together", "The practice of growing a single crop year after year on the same land", "A type of sustainable farming", "Farming without any culture"], "correct_answer": "The practice of growing a single crop year after year on the same land"},
-            {"question_text": "Which state in India is declared as the first 'fully organic state'?", "options": ["Kerala", "Punjab", "Sikkim", "Goa"], "correct_answer": "Sikkim"},
-            {"question_text": "The use of 'Neem' extracts in agriculture is an example of a...", "options": ["Synthetic fertilizer", "Chemical pesticide", "Natural or botanical pesticide", "Growth hormone"], "correct_answer": "Natural or botanical pesticide"},
-            {"question_text": "What is a major challenge for sustainable agriculture in India?", "options": ["Lack of government support", "Small landholdings and lack of awareness among farmers", "Overproduction of food", "Too much rainfall"], "correct_answer": "Small landholdings and lack of awareness among farmers"},
-            {"question_text": "The 'National Mission for Sustainable Agriculture' (NMSA) is one of the missions under...", "options": ["The Swachh Bharat Abhiyan", "The National Action Plan on Climate Change (NAPCC)", "The Make in India initiative", "The Digital India program"], "correct_answer": "The National Action Plan on Climate Change (NAPCC)"},
-            {"question_text": "What is vermicompost?", "options": ["A chemical fertilizer", "The product of the composting process using various species of worms", "A type of pesticide", "Waste from vermin"], "correct_answer": "The product of the composting process using various species of worms"},
-            {"question_text": "What are 'heirloom seeds'?", "options": ["Genetically modified seeds", "Seeds that are passed down through generations and are open-pollinated", "Seeds that cannot be planted", "The most expensive seeds"], "correct_answer": "Seeds that are passed down through generations and are open-pollinated"},
-            {"question_text": "How does conservation tillage help in sustainable agriculture?", "options": ["It increases soil erosion", "It leaves crop residue on the soil surface to reduce erosion and conserve water", "It involves deep ploughing of the soil", "It is a method of harvesting"], "correct_answer": "It leaves crop residue on the soil surface to reduce erosion and conserve water"},
-            {"question_text": "The term 'Jeevamrutha' is associated with which farming practice?", "options": ["Green Revolution", "Zero Budget Natural Farming (ZBNF)", "Industrial agriculture", "Hydroponics"], "correct_answer": "Zero Budget Natural Farming (ZBNF)"},
-            {"question_text": "Which of these is NOT a principle of sustainable agriculture?", "options": ["Environmental health", "Economic profitability", "Social equity", "Maximum reliance on external, non-renewable inputs"], "correct_answer": "Maximum reliance on external, non-renewable inputs"},
-            {"question_text": "What is a 'polyculture' system?", "options": ["Growing a single crop", "Agriculture focused on plastics", "Growing multiple crop species in the same space, imitating the diversity of natural ecosystems", "A type of irrigation"], "correct_answer": "Growing multiple crop species in the same space, imitating the diversity of natural ecosystems"},
-            {"question_text": "Who is known as the Father of the Green Revolution in India?", "options": ["Verghese Kurien", "M. S. Swaminathan", "C. V. Raman", "Homi J. Bhabha"], "correct_answer": "M. S. Swaminathan"},
-            {"question_text": "What is the benefit of using 'cover crops'?", "options": ["They are the main cash crop", "They are planted to cover the soil to prevent erosion and improve soil health", "They require intensive irrigation", "They attract pests"], "correct_answer": "They are planted to cover the soil to prevent erosion and improve soil health"},
-            {"question_text": "Fair trade certification in agriculture ensures...", "options": ["The food is organic", "The product is cheap", "Better prices, decent working conditions, and fair terms of trade for farmers and workers", "The product is grown locally"], "correct_answer": "Better prices, decent working conditions, and fair terms of trade for farmers and workers"}
-        ]
-    }
-}
-
-
-# --- Main Function to Get Quiz ---
 def generate_quiz_questions(topic):
     """
-    First tries to get a quiz from the Gemini API.
-    If the API fails for any reason (rate limit, error, invalid key),
-    it returns a comprehensive 25-question quiz from the local fallback data.
+    Generates a 25-question quiz by directly calling the Google Gemini API.
+
+    If the API call fails for any reason (e.g., invalid API key, rate limit,
+    network error), it will print an error and return an empty structure.
     """
     try:
-        # Configure the Gemini API key from .env file
+        # 1. Get the API key from the .env file.
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            print("GEMINI_API_KEY not found. Using fallback quiz.")
-            return fallback_quiz_data.get(topic, {"questions": []})
+            print("Error: GEMINI_API_KEY not found in .env file.")
+            return {"questions": []}
 
+        # 2. Configure the Gemini client.
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-2.5-flash')
 
+        # 3. Create a detailed prompt instructing the AI.
         prompt = f"""
         Generate 25 unique multiple-choice quiz questions about the environmental topic: '{topic}' for Indian school students (Grade 8-12).
         The questions should be practical and relevant to India.
@@ -327,19 +32,23 @@ def generate_quiz_questions(topic):
         - "correct_answer": The string of the correct option.
         """
 
+        # 4. Make the live API call. 📞
         response = model.generate_content(prompt)
+        
+        # 5. Clean and parse the JSON response.
         json_text = response.text.strip().replace('```json', '').replace('```', '')
         quiz_data = json.loads(json_text)
 
-        # Basic validation to ensure we got a decent number of questions
-        if "questions" in quiz_data and len(quiz_data["questions"]) > 20:
+        # 6. Validate the response to ensure it's usable.
+        if "questions" in quiz_data and len(quiz_data["questions"]) > 10:
+            print(f"✅ Successfully generated a new quiz for '{topic}' from Gemini API.")
             return quiz_data
         else:
-            # If the API returns too few questions, treat it as a failure and use fallback.
-            print("API returned too few questions. Using fallback quiz.")
-            return fallback_quiz_data.get(topic, {"questions": []})
+            print(f"❌ API returned invalid or insufficient data for '{topic}'.")
+            return {"questions": []}
 
     except Exception as e:
-        print(f"Error generating quiz from API: {e}. Using fallback quiz.")
-        # If any error occurs, return the high-quality fallback quiz for the selected topic.
-        return fallback_quiz_data.get(topic, {"questions": []})
+        # 7. If any step fails, catch the error and return an empty structure.
+        print(f"❌ An error occurred while calling the Gemini API: {e}")
+        return {"questions": []}
+        
