@@ -1,11 +1,8 @@
-import os
-import google.generativeai as genai
 import json
 
-# --- Comprehensive Fallback Quiz Data ---
-# This dictionary contains a full 25-question quiz for every topic.
-# It is used as a reliable backup if the Gemini API call fails.
-fallback_quiz_data = {
+# --- Comprehensive Built-in Quiz Data ---
+# This dictionary is now the ONLY source for all quiz questions.
+quiz_data_library = {
     "Waste Management in India": {
         "questions": [
             {"question_text": "Which city in India was the first to implement a successful door-to-door waste collection system?", "options": ["Surat", "Indore", "Pune", "Mysuru"], "correct_answer": "Surat"},
@@ -299,48 +296,10 @@ fallback_quiz_data = {
 }
 
 
-# --- Main Function to Get Quiz ---
 def generate_quiz_questions(topic):
     """
-    First tries to get a quiz from the Gemini API.
-    If the API fails for any reason (rate limit, error, invalid key),
-    it returns a comprehensive 25-question quiz from the local fallback data.
+    This function now ONLY uses the pre-written questions from the library above.
+    It is fast, reliable, and does not use any API.
     """
-    try:
-        # Configure the Gemini API key from .env file
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            print("GEMINI_API_KEY not found. Using fallback quiz.")
-            return fallback_quiz_data.get(topic, {"questions": []})
-
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
-
-        prompt = f"""
-        Generate 25 unique multiple-choice quiz questions about the environmental topic: '{topic}' for Indian school students (Grade 8-12).
-        The questions should be practical and relevant to India.
-        Provide the output in a valid JSON format.
-        The JSON object should have a single key "questions" which is an array of objects.
-        Each object in the array should have the following keys:
-        - "question_text": The question string.
-        - "options": An array of 4 string options.
-        - "correct_answer": The string of the correct option.
-        """
-
-        response = model.generate_content(prompt)
-        json_text = response.text.strip().replace('```json', '').replace('```', '')
-        quiz_data = json.loads(json_text)
-
-        # Basic validation to ensure we got a decent number of questions
-        if "questions" in quiz_data and len(quiz_data["questions"]) > 20:
-            return quiz_data
-        else:
-            # If the API returns too few questions, treat it as a failure and use fallback.
-            print("API returned too few questions. Using fallback quiz.")
-            return fallback_quiz_data.get(topic, {"questions": []})
-
-    except Exception as e:
-        print(f"Error generating quiz from API: {e}. Using fallback quiz.")
-        # If any error occurs, return the high-quality fallback quiz for the selected topic.
-        return fallback_quiz_data.get(topic, {"questions": []})
-
+    print(f"✅ Serving '{topic}' quiz from the local library.")
+    return quiz_data_library.get(topic, {"questions": []})
