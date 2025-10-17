@@ -35,26 +35,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ topic: topic })
             });
-            if (!response.ok) throw new Error('Failed to generate quiz.');
+            if (!response.ok) throw new Error('Failed to generate quiz from API.');
 
             const data = await response.json();
             allQuestions = data.questions;
             
-            // Check if we received valid questions
             if (!allQuestions || allQuestions.length === 0) {
-                throw new Error('No questions were loaded for this topic.');
+                throw new Error('No questions were loaded for this topic. The API might be unavailable or the key might be invalid.');
             }
 
             initializeQuizState();
             renderPalette();
             displayQuestion(0);
 
-            quizSetupContainer.classList.add('hidden');
-            quizMainContainer.classList.remove('hidden');
-            quizNavigation.classList.remove('hidden');
+            // Hide the setup and show the quiz interface
+            quizSetupContainer.style.display = 'none';
+            
+            // *** CRITICAL FIX HERE ***
+            // We now directly change the display style to make the elements visible.
+            quizMainContainer.style.display = 'flex';
+            quizNavigation.style.display = 'flex';
 
         } catch (error) {
-            // Display error in a more user-friendly way
             const errorDiv = document.createElement('div');
             errorDiv.className = 'alert alert-danger';
             errorDiv.textContent = `Error: ${error.message}`;
@@ -89,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const q = allQuestions[index];
 
         let optionsHTML = '';
-        q.options.forEach((option, i) => {
+        q.options.forEach((option) => {
             const isChecked = userAnswers[index] === option ? 'checked' : '';
             optionsHTML += `
                 <li>
@@ -108,7 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        // Add event listeners to the new radio buttons
         document.querySelectorAll(`input[name="question-${index}"]`).forEach(input => {
             input.addEventListener('change', (e) => {
                 userAnswers[index] = e.target.value;
@@ -186,26 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!response.ok) throw new Error('Failed to submit quiz.');
 
-            const result = await response.json();
-            displayResult(result);
+            // Redirect to dashboard on successful submission
+            window.location.href = '/dashboard';
 
         } catch (error) {
             quizResultContainer.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
             quizResultContainer.classList.remove('hidden');
         }
-    }
-
-    function displayResult(result) {
-        quizMainContainer.classList.add('hidden');
-        quizNavigation.classList.add('hidden');
-        quizResultContainer.innerHTML = `
-            <div class="card">
-                <h2>Quiz Complete!</h2>
-                <p>You scored <strong>${result.score} out of ${result.total}</strong>.</p>
-                <p>You have earned <strong>${result.points_earned} Eco-Points!</strong></p>
-                <a href="/dashboard" class="btn">Back to Dashboard</a>
-            </div>
-        `;
-        quizResultContainer.classList.remove('hidden');
     }
 });
