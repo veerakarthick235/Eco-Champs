@@ -1,5 +1,5 @@
 :root {
-    --primary-color: #2E7D32; /* Green */
+    --primary-color: #2E7D32;
     --secondary-color: #4CAF50;
     --background-color: #f4f6f8;
     --text-color: #333;
@@ -184,11 +184,6 @@ h1, h2, h3 {
     font-weight: 600;
 }
 
-/* --- Quiz Page (Legacy styles, can be removed if not used) --- */
-#quiz-container {
-    margin-top: 1.5rem;
-}
-
 /* --- Alerts --- */
 .alert {
     padding: 15px;
@@ -257,7 +252,7 @@ tbody tr:hover { background-color: #f9f9f9; }
 }
 
 
-/* --- New Advanced Quiz Styles --- */
+/* --- Advanced Quiz Styles --- */
 .hidden {
     display: none;
 }
