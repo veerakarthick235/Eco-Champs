@@ -46,6 +46,32 @@ else:
     users_collection = challenges_collection = submissions_collection = None
 
 
+# --- Pre-load Quizzes on Startup (Try API, Catch for Fallback) ---
+quiz_cache = {}
+quiz_topics = [
+    "Waste Management in India", "Water Conservation", "Renewable Energy Sources",
+    "Air Pollution in Indian Cities", "Indian Biodiversity and Conservation", "Plastic Waste Management",
+    "E-Waste in India", "Deforestation and its Impact", "Soil Conservation Methods", "Sustainable Agriculture"
+]
+
+def preload_quizzes():
+    print("Pre-loading quizzes (Try API, Catch for Fallback)...")
+    for topic in quiz_topics:
+        print(f"  -> Requesting quiz for: {topic}")
+        # This function will try the API and use the fallback on failure
+        quiz_data = generate_quiz_questions(topic)
+        quiz_cache[topic] = quiz_data
+        
+        # Wait between each API call to respect the rate limit (15 requests/minute)
+        time.sleep(4) 
+    print("✅ All quizzes are loaded and ready.")
+
+# This `if` statement ensures the pre-loading runs only once when the server starts.
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or os.environ.get("ENV") == "production":
+    preload_quizzes()
+# --- END of Pre-loading Section ---
+
+
 # --- User Model for Flask-Login ---
 class User(UserMixin):
     def __init__(self, user_data):
@@ -66,7 +92,7 @@ def load_user(user_id):
     user_data = users_collection.find_one({'_id': ObjectId(user_id)})
     return User(user_data) if user_data else None
 
-# --- Decorators for Role-Based Access ---
+# --- Decorators and other routes ... (NO CHANGES to the rest of the routes) ---
 def teacher_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -76,7 +102,6 @@ def teacher_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- Helper Functions ---
 def calculate_badges(points):
     badges = []
     badge_thresholds = {"Eco-Initiate": 100, "Green Guardian": 250, "Planet Hero": 500}
@@ -85,22 +110,15 @@ def calculate_badges(points):
             badges.append(badge)
     return badges
 
-# --- Authentication and other routes ---
-# ... (No changes to /register, /login, etc.) ...
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+    if current_user.is_authenticated: return redirect(url_for('dashboard'))
     if request.method == 'POST':
         if users_collection is None:
             flash('Database not connected. Please try again later.', 'danger')
             return redirect(url_for('register'))
-        username = request.form['username']
-        name = request.form['name']
-        password = request.form['password']
-        school = request.form['school']
-        city = request.form['city']
-        role = request.form['role']
+        username = request.form['username']; name = request.form['name']; password = request.form['password']
+        school = request.form['school']; city = request.form['city']; role = request.form['role']
         existing_user = users_collection.find_one({'username': username})
         if existing_user:
             flash('Username already exists.', 'danger')
@@ -117,30 +135,22 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+    if current_user.is_authenticated: return redirect(url_for('dashboard'))
     if request.method == 'POST':
         if users_collection is None:
             flash('Database not connected. Please try again later.', 'danger')
             return redirect(url_for('login'))
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form['username']; password = request.form['password']
         user_data = users_collection.find_one({'username': username})
         if user_data and bcrypt.check_password_hash(user_data['password'], password):
-            user = User(user_data)
-            login_user(user)
+            user = User(user_data); login_user(user)
             today = datetime.utcnow().date()
             last_login_date = user.last_login.date() if user.last_login else None
             new_streak = user.streak
             if last_login_date is None or last_login_date < today:
-                if last_login_date == today - timedelta(days=1):
-                    new_streak += 1
-                else:
-                    new_streak = 1
-                users_collection.update_one(
-                    {'_id': ObjectId(user.id)},
-                    {'$set': {'last_login': datetime.utcnow(), 'streak': new_streak}}
-                )
+                if last_login_date == today - timedelta(days=1): new_streak += 1
+                else: new_streak = 1
+                users_collection.update_one({'_id': ObjectId(user.id)}, {'$set': {'last_login': datetime.utcnow(), 'streak': new_streak}})
                 flash(f"Welcome back! Your daily login streak is now {new_streak}!", "info")
             return redirect(url_for('dashboard'))
         else:
@@ -239,9 +249,7 @@ def handle_submission(submission_id, action):
         challenge = challenges_collection.find_one({'_id': submission['challenge_id']})
         user_data = users_collection.find_one({'_id': submission['user_id']})
         new_points = user_data.get('points', 0) + challenge['points']; new_badges = calculate_badges(new_points)
-        users_collection.update_one(
-            {'_id': submission['user_id']}, {'$inc': {'points': challenge['points']}, '$set': {'badges': new_badges}}
-        )
+        users_collection.update_one({'_id': submission['user_id']}, {'$inc': {'points': challenge['points']}, '$set': {'badges': new_badges}})
         flash('Submission approved and points awarded.', 'success')
     elif action == 'reject':
         submissions_collection.update_one({'_id': ObjectId(submission_id)}, {'$set': {'status': 'rejected'}})
@@ -253,13 +261,13 @@ def handle_submission(submission_id, action):
 @login_required
 def get_quiz():
     topic = request.json.get('topic')
-    quiz_data = generate_quiz_questions(topic)
-    if not quiz_data or not quiz_data.get("questions"):
-        return jsonify({"error": "Failed to generate quiz for this topic."}), 500
+    # This serves the quiz from the cache that was populated at startup.
+    quiz_data = quiz_cache.get(topic)
+    if not quiz_data:
+        return jsonify({"error": "Quiz for this topic is not available."}), 404
     session['current_quiz'] = quiz_data
     return jsonify(quiz_data)
 
-# *** THIS IS THE ONLY SECTION THAT HAS CHANGED ***
 @app.route('/submit_quiz', methods=['POST'])
 @login_required
 def submit_quiz():
@@ -267,22 +275,14 @@ def submit_quiz():
     quiz_questions = session.get('current_quiz', {}).get('questions', [])
     correct_answers = sum(1 for i, q in enumerate(quiz_questions) if i < len(user_answers) and user_answers[i] == q['correct_answer'])
     points_earned = correct_answers * 20
-    
-    # Update user's points in the database
     user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
     new_points = user_data.get('points', 0) + points_earned
     new_badges = calculate_badges(new_points)
     users_collection.update_one(
         {'_id': ObjectId(current_user.id)}, {'$inc': {'points': points_earned}, '$set': {'badges': new_badges}}
     )
-    
-    # *** NEW LINE ADDED HERE ***
-    # Create a message with the score and flash it to the user's session.
     flash(f"Quiz Complete! You scored {correct_answers} out of {len(quiz_questions)} and earned {points_earned} Eco-Points!", "success")
-    
     session.pop('current_quiz', None)
-    
-    # The JSON response is still sent, which the JavaScript uses to trigger the redirect.
     return jsonify({"score": correct_answers, "total": len(quiz_questions), "points_earned": points_earned})
 
 if __name__ == '__main__':
